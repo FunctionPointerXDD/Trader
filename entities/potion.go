@@ -3,5 +3,5 @@ package entities
 type Potion struct {
 	*Sprite
 	AmtHeal uint
-	isUsed  bool
+	IsUsed  bool
 }

@@ -17,6 +17,7 @@ type Game struct {
 	potions     []*entities.Potion
 	tilemapJSON *TilemapJSON
 	tilemapImg  *ebiten.Image
+	cam         *Camera
 }
 
 func (g *Game) Update() error {
@@ -51,15 +52,21 @@ func (g *Game) Update() error {
 	}
 
 	for _, potion := range g.potions {
-		// 플레이어와 포션 이미지가 겹치는지 확인 (16x16 크기 기준)
-		if !potion.isUsed && g.player.X > potion.X-16.0 && g.player.X < potion.X+16.0 &&
+		if !potion.IsUsed && g.player.X > potion.X-16.0 && g.player.X < potion.X+16.0 &&
 			g.player.Y > potion.Y-16.0 && g.player.Y < potion.Y+16.0 {
 			g.player.Health += potion.AmtHeal
 			log.Printf("Picked up potion!. Health: %d\n", g.player.Health)
-			potion.isUsed = true
-			// 한 번 먹은 포션은 제거하거나 비활성화 해야 함. 일단 로그 확인용.
+			potion.IsUsed = true
 		}
 	}
+
+	g.cam.FollowTarget(g.player.X+8, g.player.Y+8, 320, 240)
+	g.cam.Constrain(
+		float64(g.tilemapJSON.Layers[0].Width)*16.0,
+		float64(g.tilemapJSON.Layers[0].Height)*16.0,
+		320,
+		240,
+	)
 
 	return nil
 }
@@ -90,6 +97,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			srcY *= 16
 
 			opts.GeoM.Translate(float64(x), float64(y))
+			opts.GeoM.Translate(g.cam.X, g.cam.Y)
 
 			screen.DrawImage(
 				g.tilemapImg.SubImage(image.Rect(srcX, srcY, srcX+16, srcY+16)).(*ebiten.Image),
@@ -101,6 +109,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	opts.GeoM.Translate(g.player.X, g.player.Y)
+	opts.GeoM.Translate(g.cam.X, g.cam.Y)
 
 	// draw our player
 	screen.DrawImage(
@@ -114,6 +123,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for _, sprite := range g.enemies {
 		opts.GeoM.Translate(sprite.X, sprite.Y)
+		opts.GeoM.Translate(g.cam.X, g.cam.Y)
 		screen.DrawImage(
 			sprite.Img.SubImage(
 				image.Rect(0, 0, 16, 16),
@@ -126,28 +136,25 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	opts.GeoM.Reset()
 
 	for _, sprite := range g.potions {
-		opts.GeoM.Translate(sprite.X, sprite.Y)
-		screen.DrawImage(
-			sprite.Img.SubImage(
-				image.Rect(0, 0, 16, 16),
-			).(*ebiten.Image),
-			&opts,
-		)
-		opts.GeoM.Reset()
-	}
-	opts.GeoM.Reset()
-
-	for _, sprite := range g.potions {
-		if sprite.isUsed {
-			sprite.Img.Clear()
+		if sprite.IsUsed {
+			continue
 		}
+		opts.GeoM.Translate(sprite.X, sprite.Y)
+		opts.GeoM.Translate(g.cam.X, g.cam.Y)
+		screen.DrawImage(
+			sprite.Img.SubImage(
+				image.Rect(0, 0, 16, 16),
+			).(*ebiten.Image),
+			&opts,
+		)
+		opts.GeoM.Reset()
 	}
 
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	//return 320, 240
-	return ebiten.WindowSize() // 창 크기 만큼 레이아웃 사이즈 조절
+	return 320, 240
+	//return ebiten.WindowSize() // 창 크기 만큼 레이아웃 사이즈 조절
 }
 
 func main() {
@@ -189,45 +196,46 @@ func main() {
 	}
 
 	game := Game{
-		player: &Player{
-			Sprite: &Sprite{
+		player: &entities.Player{
+			Sprite: &entities.Sprite{
 				Img: playerImg,
 				X:   50.0,
 				Y:   50.0,
 			},
 			Health: 3,
 		},
-		enemies: []*Enemy{
+		enemies: []*entities.Enemy{
 			{
-				&Sprite{
+				Sprite: &entities.Sprite{
 					Img: skeletonImg,
 					X:   100.0,
 					Y:   100.0,
 				},
-				true,
+				FollowsPlayer: true,
 			},
 			{
-				&Sprite{
+				Sprite: &entities.Sprite{
 					Img: skeletonImg,
 					X:   150.0,
 					Y:   150.0,
 				},
-				true,
+				FollowsPlayer: true,
 			},
 		},
-		potions: []*Potion{
+		potions: []*entities.Potion{
 			{
-				&Sprite{
+				Sprite: &entities.Sprite{
 					Img: potionImg,
 					X:   210.0,
 					Y:   100.0,
 				},
-				1.0,
-				false,
+				AmtHeal: 1.0,
+				IsUsed:  false,
 			},
 		},
 		tilemapJSON: tilemapJSON,
 		tilemapImg:  tilemapImg,
+		cam:         NewCamera(0.0, 0.0),
 	}
 
 	if err := ebiten.RunGame(&game); err != nil { // Game이라는 구조체(이름은 상관없음) 하나를 정의해서 Update, Draw, Layout에 인터페이스 역할을 수행한다.
