@@ -1,0 +1,29 @@
+{
+    "activeFile": "maps/spawn.json",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "TilesetFloor.tsx": {
+            "scaleInDock": 2,
+            "scaleInEditor": 2
+        },
+        "maps/spawn.json": {
+            "scale": 3,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 558.5,
+                "y": 167.49999999999997
+            }
+        }
+    },
+    "map.lastUsedFormat": "json",
+    "openFiles": [
+        "maps/spawn.json",
+        "TilesetFloor.tsx"
+    ],
+    "project": "maps.tiled-project",
+    "recentFiles": [
+        "TilesetFloor.tsx",
+        "maps/spawn.json"
+    ]
+}
