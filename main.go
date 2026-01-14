@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"os"
 
 	"github.com/FunctionPointerXDD/Trader/entities"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,6 +15,7 @@ type Game struct {
 	enemies     []*entities.Enemy
 	potions     []*entities.Potion
 	tilemapJSON *TilemapJSON
+	tilesets    []Tileset
 	tilemapImg  *ebiten.Image
 	cam         *Camera
 }
@@ -79,9 +79,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	opts := ebiten.DrawImageOptions{}
 
 	//loop over the layers
-	for _, layer := range g.tilemapJSON.Layers {
+	for layerIndex, layer := range g.tilemapJSON.Layers {
 		for index, id := range layer.Data {
 
+			if id == 0 {
+				continue
+			}
 			//catch display position
 			x := index % layer.Width
 			y := index / layer.Width
@@ -89,21 +92,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			x *= 16
 			y *= 16
 
-			//catch tileset position (id-> tileset's id)
-			srcX := (id - 1) % 22
-			srcY := (id - 1) / 22
-
-			srcX *= 16
-			srcY *= 16
+			img := g.tilesets[layerIndex].Img(id)
 
 			opts.GeoM.Translate(float64(x), float64(y))
+			opts.GeoM.Translate(0.0, -(float64(img.Bounds().Dy()) + 16))
 			opts.GeoM.Translate(g.cam.X, g.cam.Y)
-
-			screen.DrawImage(
-				g.tilemapImg.SubImage(image.Rect(srcX, srcY, srcX+16, srcY+16)).(*ebiten.Image),
-				&opts,
-			)
-
+			screen.DrawImage(img, &opts)
 			opts.GeoM.Reset()
 		}
 	}
@@ -158,13 +152,6 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
-	// 로그 파일 설정: WSL이나 일부 환경에서 터미널 출력이 안 보일 경우를 대비해 파일로 남김
-	f, err := os.OpenFile("game.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	log.SetOutput(f) // 모든 log.Print... 함수가 이 파일에 쓰도록 설정
 
 	ebiten.SetWindowSize(640, 480) // 기본 창 사이즈
 	ebiten.SetWindowTitle("Hello, World!")
@@ -190,7 +177,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tilemapJSON, err := NewTilemapJSON("assets/maps/tileset/spawn.json")
+	tilemapJSON, err := NewTilemapJSON("assets/maps/spawn.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tilesets, err := tilemapJSON.GenTilesets()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,6 +227,7 @@ func main() {
 		},
 		tilemapJSON: tilemapJSON,
 		tilemapImg:  tilemapImg,
+		tilesets:    tilesets,
 		cam:         NewCamera(0.0, 0.0),
 	}
 
