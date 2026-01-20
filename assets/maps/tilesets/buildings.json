@@ -1,9 +1,9 @@
 { "columns":0,
  "grid":
     {
-     "height":1,
+     "height":32,
      "orientation":"orthogonal",
-     "width":1
+     "width":32
     },
  "margin":0,
  "name":"buildings",

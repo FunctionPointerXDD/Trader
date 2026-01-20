@@ -21,6 +21,7 @@ func (c *Camera) FollowTarget(targetX, targetY, screenWidth, screenHeight float6
 	c.Y = -targetY + screenHeight/2.0
 }
 
+/* 카메라가 배경 밖으로 벗어나지 않게 해주는 함수*/
 func (c *Camera) Constrain(tilemapWidthPixels, tilemapHeightPixels, screenWidth, screenHeight float64) {
 	c.X = math.Min(c.X, 0.0)
 	c.Y = math.Min(c.Y, 0.0)
