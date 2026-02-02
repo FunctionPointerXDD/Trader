@@ -1,6 +1,9 @@
 package entities
 
-import "github.com/FunctionPointerXDD/Trader/animations"
+import (
+	"github.com/FunctionPointerXDD/Trader/animations"
+	"github.com/FunctionPointerXDD/Trader/components"
+)
 
 type PlayerState uint8
 
@@ -15,6 +18,7 @@ type Player struct {
 	*Sprite
 	Health     uint
 	Animations map[PlayerState]*animations.Animation
+	CombatComp *components.BasicCombat
 }
 
 func (p *Player) ActiveAnimation(dx, dy int) *animations.Animation {
@@ -30,5 +34,5 @@ func (p *Player) ActiveAnimation(dx, dy int) *animations.Animation {
 	if dy < 0 {
 		return p.Animations[Up]
 	}
-	return nil
+	return nil // No update in Game Update function
 }
